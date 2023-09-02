@@ -110,7 +110,7 @@ public class ReflectionAnnotationMemberDeclaration implements ResolvedAnnotation
 
     @Override
     public Optional<Object> getComputedDefaultValue() {
-       return Optional.ofNullable(annotationMember.getDefaultValue()).map(it -> ReflectionFactory.convertAnnotationMemberValue(it, typeSolver));
+        return Optional.ofNullable(annotationMember.getDefaultValue()).map(it -> ReflectionFactory.convertAnnotationMemberValue(it, typeSolver));
     }
 
     @Override

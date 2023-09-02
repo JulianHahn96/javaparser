@@ -26,7 +26,6 @@ package com.github.javaparser.symbolsolver.reflectionmodel;
 import com.github.javaparser.resolution.TypeSolver;
 import com.github.javaparser.resolution.declarations.ResolvedAnnotationDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedAnnotationMemberDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedEnumDeclaration;
 import com.github.javaparser.symbolsolver.logic.AbstractAnnotation;
 
 import java.lang.annotation.Annotation;
@@ -34,7 +33,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public class ReflectionAnnotation extends AbstractAnnotation {
 
