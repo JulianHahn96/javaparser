@@ -157,6 +157,7 @@ public class JavaParserTypeAdapter<T extends Node & NodeWithSimpleName<T> & Node
     public Optional<ResolvedReferenceTypeDeclaration> containerType() {
         return wrappedNode
                 .getParentNode()
+                .filter(parentNode -> !(parentNode instanceof CompilationUnit))
                 .map(node -> {
                     if(node instanceof CompilationUnit) {
                         return null;

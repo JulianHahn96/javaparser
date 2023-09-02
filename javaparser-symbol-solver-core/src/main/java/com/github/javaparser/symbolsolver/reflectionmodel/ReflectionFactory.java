@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * @author Federico Tomassetti
  */
 public class ReflectionFactory {
-    
+
     private static String JAVA_LANG_OBJECT = Object.class.getCanonicalName();
 
     public static ResolvedReferenceTypeDeclaration typeDeclarationFor(Class<?> clazz, TypeSolver typeSolver) {
@@ -102,7 +102,7 @@ public class ReflectionFactory {
             WildcardType wildcardType = (WildcardType) type;
             if (wildcardType.getLowerBounds().length > 0 && wildcardType.getUpperBounds().length > 0) {
                 if (wildcardType.getUpperBounds().length == 1 && wildcardType.getUpperBounds()[0].getTypeName().equals(JAVA_LANG_OBJECT)) {
-                    // ok, it does not matter
+                	// ok, it does not matter
                 }
             }
             if (wildcardType.getLowerBounds().length > 0) {
@@ -114,6 +114,9 @@ public class ReflectionFactory {
             if (wildcardType.getUpperBounds().length > 0) {
                 if (wildcardType.getUpperBounds().length > 1) {
                     throw new UnsupportedOperationException();
+                }
+                if (wildcardType.getUpperBounds().length == 1 && wildcardType.getUpperBounds()[0].getTypeName().equals(JAVA_LANG_OBJECT)) {
+                	return ResolvedWildcard.UNBOUNDED;
                 }
                 return ResolvedWildcard.extendsBound(typeUsageFor(wildcardType.getUpperBounds()[0], typeSolver));
             }
