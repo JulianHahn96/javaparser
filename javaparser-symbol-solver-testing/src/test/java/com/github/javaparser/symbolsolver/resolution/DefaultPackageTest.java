@@ -171,11 +171,6 @@ class DefaultPackageTest {
         public boolean hasModifier(Modifier.Keyword keyword) {
             return false;
         }
-
-        @Override
-        public boolean hasModifier(Modifier.Keyword keyword) {
-            return false;
-        }
     }
 
     @Test
