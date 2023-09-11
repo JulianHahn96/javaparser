@@ -21,23 +21,12 @@
 
 package com.github.javaparser.symbolsolver.javaparsermodel.declarations;
 
-import static com.github.javaparser.StaticJavaParser.parse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
+import com.github.javaparser.JavaParserAdapter;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.AccessSpecifier;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.resolution.MethodUsage;
 import com.github.javaparser.resolution.Navigator;
@@ -49,19 +38,32 @@ import com.github.javaparser.resolution.model.typesystem.ReferenceTypeImpl;
 import com.github.javaparser.resolution.types.ResolvedPrimitiveType;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
-import com.github.javaparser.symbolsolver.AbstractSymbolResolutionTest;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
 import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionFactory;
+import com.github.javaparser.symbolsolver.resolution.AbstractResolutionTest;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import com.github.javaparser.symbolsolver.utils.LeanParserConfiguration;
+import com.github.javaparser.utils.CodeGenerationUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-class JavaParserClassDeclarationTest extends AbstractSymbolResolutionTest {
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.github.javaparser.StaticJavaParser.parse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.*;
+
+class JavaParserClassDeclarationTest extends AbstractResolutionTest {
 
     private TypeSolver typeSolver;
     private TypeSolver typeSolverNewCode;
@@ -957,7 +959,26 @@ class JavaParserClassDeclarationTest extends AbstractSymbolResolutionTest {
 
     // Set<TypeDeclaration> internalTypes()
 
-    // Optional<TypeDeclaration> containerType()
+    // issue #4133
+    @Test
+	void testContainerType() {
+		String code =
+	            "public class Foo {\n"
+	            + "    public static class Bar {\n"
+	            + "        public static class Baz {\n"
+	            + "        }\n"
+	            + "    }\n"
+	            + "}\n";
+
+		JavaParserAdapter parser = JavaParserAdapter.of(createParserWithResolver(defaultTypeSolver()));
+		CompilationUnit cu = parser.parse(code);
+
+		List<ClassOrInterfaceDeclaration> declarations = cu.findAll(ClassOrInterfaceDeclaration.class);
+		// top level type
+		assertFalse(declarations.get(0).resolve().asReferenceType().containerType().isPresent());
+		assertEquals("Foo", declarations.get(1).resolve().asReferenceType().containerType().get().getQualifiedName());
+		assertEquals("Foo.Bar", declarations.get(2).resolve().asReferenceType().containerType().get().getQualifiedName());
+	}
 
 
     @Test
@@ -1001,6 +1022,37 @@ class JavaParserClassDeclarationTest extends AbstractSymbolResolutionTest {
         List<ResolvedReferenceType> ancestors = foo.asReferenceType().getTypeDeclaration().get().getAncestors();
         assertTrue(ancestors.size() == 1);
         assertEquals("FooBase", ancestors.get(0).getQualifiedName());
+    }
+
+    @Test
+    public void checkModifiersOnClass() throws IOException {
+        ReflectionTypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
+        Path rootDir = CodeGenerationUtils.mavenModuleRoot(JavaParserFieldDeclarationTest.class).resolve("src/test/java/com/github/javaparser/symbolsolver/testingclasses");
+        CompilationUnit cu1 = parse(rootDir.resolve("ClassWithAbstractModifiers.java"));
+
+        ClassOrInterfaceDeclaration tempClassWithAbstractModifiers = cu1.findAll(ClassOrInterfaceDeclaration.class).get(0);
+        JavaParserClassDeclaration tempResolvedClassWithAbstractModifiers = new JavaParserClassDeclaration(tempClassWithAbstractModifiers, reflectionTypeSolver);
+
+        assertTrue(tempResolvedClassWithAbstractModifiers.hasModifier(Modifier.Keyword.PUBLIC));
+        assertTrue(tempResolvedClassWithAbstractModifiers.hasModifier(Modifier.Keyword.ABSTRACT));
+        assertFalse(tempResolvedClassWithAbstractModifiers.hasModifier(Modifier.Keyword.FINAL));
+
+        CompilationUnit cu2 = parse(rootDir.resolve("ClassWithFinalModifiers.java"));
+
+        ClassOrInterfaceDeclaration tempClassWithFinalModifiers = cu2.findAll(ClassOrInterfaceDeclaration.class).get(0);
+        JavaParserClassDeclaration tempResolvedClassWithFinalModifiers = new JavaParserClassDeclaration(tempClassWithFinalModifiers, reflectionTypeSolver);
+
+        assertTrue(tempResolvedClassWithFinalModifiers.hasModifier(Modifier.Keyword.PUBLIC));
+        assertFalse(tempResolvedClassWithFinalModifiers.hasModifier(Modifier.Keyword.ABSTRACT));
+        assertTrue(tempResolvedClassWithFinalModifiers.hasModifier(Modifier.Keyword.FINAL));
+
+        CompilationUnit cu3 = parse(rootDir.resolve("ClassWithoutModifiers.java"));
+        ClassOrInterfaceDeclaration tempClassWithoutModifiers = cu3.findAll(ClassOrInterfaceDeclaration.class).get(0);
+        JavaParserClassDeclaration tempResolvedClassWithoutModifiers = new JavaParserClassDeclaration(tempClassWithoutModifiers, reflectionTypeSolver);
+
+        assertTrue(tempResolvedClassWithoutModifiers.hasModifier(Modifier.Keyword.PUBLIC));
+        assertFalse(tempResolvedClassWithoutModifiers.hasModifier(Modifier.Keyword.ABSTRACT));
+        assertFalse(tempResolvedClassWithoutModifiers.hasModifier(Modifier.Keyword.FINAL));
     }
 
     private List<ResolvedType> declaredTypes(String... lines) {

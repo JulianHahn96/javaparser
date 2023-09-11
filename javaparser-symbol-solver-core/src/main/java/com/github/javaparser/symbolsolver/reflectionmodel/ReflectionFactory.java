@@ -39,11 +39,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+import com.github.javaparser.ast.AccessSpecifier;
+import com.github.javaparser.resolution.TypeSolver;
+import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
+import com.github.javaparser.resolution.declarations.ResolvedTypeParameterDeclaration;
+import com.github.javaparser.resolution.model.typesystem.ReferenceTypeImpl;
+import com.github.javaparser.resolution.types.*;
+
 /**
  * @author Federico Tomassetti
  */
 public class ReflectionFactory {
-    
+
     private static String JAVA_LANG_OBJECT = Object.class.getCanonicalName();
 
     public static ResolvedReferenceTypeDeclaration typeDeclarationFor(Class<?> clazz, TypeSolver typeSolver) {
@@ -102,7 +109,7 @@ public class ReflectionFactory {
             WildcardType wildcardType = (WildcardType) type;
             if (wildcardType.getLowerBounds().length > 0 && wildcardType.getUpperBounds().length > 0) {
                 if (wildcardType.getUpperBounds().length == 1 && wildcardType.getUpperBounds()[0].getTypeName().equals(JAVA_LANG_OBJECT)) {
-                    // ok, it does not matter
+                	// ok, it does not matter
                 }
             }
             if (wildcardType.getLowerBounds().length > 0) {
@@ -114,6 +121,9 @@ public class ReflectionFactory {
             if (wildcardType.getUpperBounds().length > 0) {
                 if (wildcardType.getUpperBounds().length > 1) {
                     throw new UnsupportedOperationException();
+                }
+                if (wildcardType.getUpperBounds().length == 1 && wildcardType.getUpperBounds()[0].getTypeName().equals(JAVA_LANG_OBJECT)) {
+                	return ResolvedWildcard.UNBOUNDED;
                 }
                 return ResolvedWildcard.extendsBound(typeUsageFor(wildcardType.getUpperBounds()[0], typeSolver));
             }
