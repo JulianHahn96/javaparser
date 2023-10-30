@@ -121,13 +121,36 @@ public class JavassistEnumDeclaration extends AbstractTypeDeclaration
     }
 
     @Override
+    public boolean canBeAssignedTo(ResolvedReferenceTypeDeclaration other) {
+        String otherName = other.getQualifiedName();
+        // Enums cannot be extended
+        if (otherName.equals(this.getQualifiedName())) {
+            return true;
+        }
+        if (otherName.equals(JAVA_LANG_ENUM)) {
+            return true;
+        }
+        // Enum implements Comparable and Serializable
+        if (otherName.equals(JAVA_LANG_COMPARABLE)) {
+            return true;
+        }
+        if (otherName.equals(JAVA_IO_SERIALIZABLE)) {
+            return true;
+        }
+        if (other.isJavaLangObject()) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public boolean isAssignableBy(ResolvedType type) {
-        throw new UnsupportedOperationException();
+    	return javassistTypeDeclarationAdapter.isAssignableBy(type);
     }
 
     @Override
     public boolean isAssignableBy(ResolvedReferenceTypeDeclaration other) {
-        throw new UnsupportedOperationException();
+    	return javassistTypeDeclarationAdapter.isAssignableBy(other);
     }
 
     @Override
@@ -156,7 +179,8 @@ public class JavassistEnumDeclaration extends AbstractTypeDeclaration
         return JavassistUtils.solveMethod(name, argumentsTypes, staticOnly, typeSolver, this, ctClass);
     }
 
-    public Optional<MethodUsage> solveMethodAsUsage(String name, List<ResolvedType> argumentsTypes,
+    @Override
+	public Optional<MethodUsage> solveMethodAsUsage(String name, List<ResolvedType> argumentsTypes,
                                                     Context invokationContext, List<ResolvedType> typeParameterValues) {
         return JavassistUtils.solveMethodAsUsage(name, argumentsTypes, typeSolver, invokationContext, typeParameterValues, this, ctClass);
     }
