@@ -26,11 +26,28 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import com.github.javaparser.TokenRange;
-import com.github.javaparser.ast.*;
+import com.github.javaparser.ast.AccessSpecifier;
+import com.github.javaparser.ast.AllFieldsConstructor;
+import com.github.javaparser.ast.Generated;
+import com.github.javaparser.ast.Modifier;
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.SimpleName;
-import com.github.javaparser.ast.nodeTypes.*;
-import com.github.javaparser.ast.nodeTypes.modifiers.*;
+import com.github.javaparser.ast.nodeTypes.NodeWithDeclaration;
+import com.github.javaparser.ast.nodeTypes.NodeWithJavadoc;
+import com.github.javaparser.ast.nodeTypes.NodeWithOptionalBlockStmt;
+import com.github.javaparser.ast.nodeTypes.NodeWithParameters;
+import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
+import com.github.javaparser.ast.nodeTypes.NodeWithThrownExceptions;
+import com.github.javaparser.ast.nodeTypes.NodeWithType;
+import com.github.javaparser.ast.nodeTypes.NodeWithTypeParameters;
+import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithAbstractModifier;
+import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithAccessModifiers;
+import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithFinalModifier;
+import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithStaticModifier;
+import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithStrictfpModifier;
 import com.github.javaparser.ast.observer.ObservableProperty;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -268,12 +285,13 @@ public class MethodDeclaration extends CallableDeclaration<MethodDeclaration> im
     }
 
     private boolean isDeclaredInInterface() {
-        Optional<TypeDeclaration> parentType = findAncestor(TypeDeclaration.class);
-        return parentType
-                .filter(BodyDeclaration::isClassOrInterfaceDeclaration)
-                .map(BodyDeclaration::asClassOrInterfaceDeclaration)
-                .map(ClassOrInterfaceDeclaration::isInterface)
-                .orElse(false);
+        Optional<Node> parentType = findAncestor(x -> true, TypeDeclaration.class, ObjectCreationExpr.class);
+        if(!parentType.isPresent()) return false;
+        Node tempParent = parentType.get();
+        if(tempParent instanceof ObjectCreationExpr) return false;
+        TypeDeclaration<?> tempParentTypeDecl = (TypeDeclaration<?>) tempParent;
+        if(!tempParentTypeDecl.isClassOrInterfaceDeclaration()) return false;
+        return tempParentTypeDecl.asClassOrInterfaceDeclaration().isInterface();
     }
 
     public boolean isNative() {

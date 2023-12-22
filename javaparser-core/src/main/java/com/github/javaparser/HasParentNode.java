@@ -20,12 +20,12 @@
  */
 package com.github.javaparser;
 
-import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.observer.Observable;
-
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Predicate;
+
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.observer.Observable;
 
 /**
  * An object that can have a parent node.
@@ -65,7 +65,7 @@ public interface HasParentNode<T> extends Observable {
      * Walks the parents of this node and returns the first node of type {@code type}, or {@code empty()} if none is
      * found. The given type may also be an interface type, such as one of the {@code NodeWith...} interface types.
      */
-    default <N> Optional<N> findAncestor(Class<N>... types) {
+    default <N> Optional<N> findAncestor(Class<? extends N>... types) {
         return findAncestor(x -> true, types);
     }
 
@@ -88,11 +88,11 @@ public interface HasParentNode<T> extends Observable {
      * {@code NodeWith...} interface types.
      * @param <N>
      */
-    default <N> Optional<N> findAncestor(Predicate<N> predicate, Class<N>... types) {
+    default <N> Optional<N> findAncestor(Predicate<N> predicate, Class<? extends N>... types) {
         if (!hasParentNode())
             return Optional.empty();
         Node parent = getParentNode().get();
-        Optional<Class<N>> oType = Arrays.stream(types).filter(type -> type.isAssignableFrom(parent.getClass()) && predicate.test(type.cast(parent))).findFirst();
+        Optional<Class<? extends N>> oType = Arrays.stream(types).filter(type -> type.isAssignableFrom(parent.getClass()) && predicate.test(type.cast(parent))).findFirst();
         if (oType.isPresent()) {
             return Optional.of(oType.get().cast(parent));
         }
